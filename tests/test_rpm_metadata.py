@@ -21,7 +21,7 @@ else:
 import shutil
 import logging
 import tempfile
-import urlparse
+from six.moves import urllib
 import threading
 import six.moves.BaseHTTPServer
 
@@ -38,7 +38,7 @@ class DummyHTTPServerThread(threading.Thread):
         def do_GET(self):
             DummyHTTPServerThread.Handler.requests += 1
 
-            parsed_path = urlparse.urlparse(self.path)
+            parsed_path = urllib.parse.urlparse(self.path)
 
             self.send_response(200)
             if parsed_path.path.endswith(".xml"):
@@ -61,16 +61,16 @@ class DummyHTTPServerThread(threading.Thread):
         threading.Thread.__init__(self)
 
         self.port = port
-        self._stop = threading.Event()
+        self._stopper = threading.Event()
         self.rqueue = queue.Queue()
         DummyHTTPServerThread.Handler.directory = directory
         DummyHTTPServerThread.Handler.requests = 0
 
-    def stop(self):
-        self._stop.set()
+    def stop_it(self):
+        self._stopper.set()
 
     def keep_running(self):
-        return not self._stop.isSet()
+        return not self._stopper.isSet()
 
     def run(self):
         httpd = six.moves.BaseHTTPServer.HTTPServer(("", self.port),
@@ -97,7 +97,7 @@ class RpmMetadataTestCase(faftests.TestCase):
                         os.path.join(self.tmpdir, os.path.basename(self.rpm)))
 
         proc = popen("createrepo", self.tmpdir)
-        self.assertIn("Workers Finished", proc.stdout)
+        self.assertTrue(b"Workers Finished" in proc.stdout or b"Pool finished" in proc.stdout)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
@@ -171,7 +171,7 @@ class RpmMetadataTestCase(faftests.TestCase):
                                "http://localhost:53135/{0}".format(
                                                    os.path.basename(self.rpm)))
         finally:
-            t.stop()
+            t.stop_it()
 
         t.join(2)
         if t.isAlive():
@@ -206,7 +206,7 @@ class RpmMetadataTestCase(faftests.TestCase):
                                "http://localhost:53535/{0}".format(
                                                    os.path.basename(self.rpm)))
         finally:
-            t.stop()
+            t.stop_it()
 
         t.join(2)
         if t.isAlive():

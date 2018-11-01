@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with faf.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 from operator import itemgetter
 from collections import defaultdict
 import satyr
@@ -82,7 +83,7 @@ class CreateProblems(Action):
                               key=lambda fname: len(func_thread_map[fname]))
         for func_name in funcs_by_use:
             # Set of sets of already processed threads in which this function appears
-            thread_sets = HashableSet()
+            thread_sets = set()
             # For temporary storage for newly appearing threads
             detached_threads = HashableSet()
             # For every thread in which this function appears
@@ -94,7 +95,10 @@ class CreateProblems(Action):
                     continue
 
                 # Get thread set and make sure it's in the thread_sets
-                thread_set = thread_map[thread]
+                if sys.version_info.major == 2:
+                    thread_set = thread_map[thread]
+                else:
+                    thread_set = frozenset(thread_map[thread])
                 if thread_set in thread_sets:
                     continue
 
@@ -139,7 +143,7 @@ class CreateProblems(Action):
         func_thread_map = self._get_func_thread_map(threads)
 
         # Filter out unique threads
-        for func_name, func_threads in func_thread_map.items():
+        for func_name, func_threads in func_thread_map.copy().items():
             if len(func_threads) <= 1:
                 func_thread_map.pop(func_name)
 
@@ -153,7 +157,10 @@ class CreateProblems(Action):
                 continue
 
             clusters.append(list(threads_))
-            processed.add(threads_)
+            if sys.version_info.major == 2:
+                processed.add(threads_)
+            else:
+                processed.add(frozenset(threads_))
 
         return clusters
 
@@ -330,9 +337,13 @@ class CreateProblems(Action):
                 self.log_debug("Getting dendrogram")
                 dendrograms.append(satyr.Dendrogram(distances))
 
+            dendogram_cut = 0.3
+            if speedup:
+                dendogram_cut = dendogram_cut * 1.1
+
             for dendrogram, cluster in zip(dendrograms, clusters):
                 problem = []
-                for dups in dendrogram.cut(0.3, 1):
+                for dups in dendrogram.cut(dendogram_cut, 1):
                     reports = set(report_map[cluster[dup]] for dup in dups)
                     problem.append(reports)
 

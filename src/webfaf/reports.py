@@ -859,7 +859,7 @@ def new():
             fname = str(uuid.uuid4())
             fpath = os.path.join(paths["reports_incoming"], fname)
             with open(fpath, 'w') as file:
-                file.write(raw_data)
+                file.write(raw_data.decode("utf-8"))
 
             if request_wants_json():
                 response = {'result': known}
@@ -978,7 +978,7 @@ def attach():
             fname = str(uuid.uuid4())
             fpath = os.path.join(paths["attachments_incoming"], fname)
             with open(fpath, "w") as file:
-                file.write(raw_data)
+                file.write(raw_data.decode("utf-8"))
 
             if request_wants_json():
                 json_response = jsonify({"result": True})
