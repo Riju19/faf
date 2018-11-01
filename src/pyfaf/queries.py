@@ -32,6 +32,7 @@ __all__ = ["get_arch_by_name", "get_archs", "get_associate_by_name",
            "get_component_by_name", "get_components_by_opsys",
            "get_contact_email", "get_report_contact_email",
            "get_crashed_package_for_report",
+           "get_crashed_package_version_for_report",
            "get_crashed_unknown_package_nevr_for_report",
            "get_debug_files", "get_external_faf_by_baseurl",
            "get_external_faf_by_id", "get_external_faf_by_name",
@@ -1286,6 +1287,17 @@ def get_crashed_unknown_package_nevr_for_report(db, report_id):
             .filter(st.ReportUnknownPackage.report_id == report_id)
             .filter(st.ReportUnknownPackage.type == "CRASHED")
             .all())
+
+def get_crashed_package_version_for_report(db, report_id):
+    """
+    Return version for unknown packages that CRASHED in a given
+    report.
+    """
+    return (db.session.query(st.ReportUnknownPackage.version)
+            .filter(st.ReportUnknownPackage.report_id == report_id)
+            .filter(st.ReportUnknownPackage.type == "CRASHED")
+            .order_by(desc('version'))
+            .first())
 
 
 def get_problem_opsysrelease(db, problem_id, opsysrelease_id):
