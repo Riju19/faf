@@ -50,6 +50,7 @@ from pyfaf.queries import (get_report,
                            get_external_faf_instances,
                            get_report_opsysrelease,
                            get_crashed_package_for_report,
+                           get_crashed_package_version_for_report,
                            get_crashed_unknown_package_nevr_for_report
                           )
 from pyfaf import ureport
@@ -189,6 +190,10 @@ def get_reports(filter_form, pagination):
 
     return r
 
+
+def get_package_version(report_id):
+    latest_version = get_crashed_package_version_for_report(db,report_id)
+    return latest_version[0]
 
 def reports_list_table_rows_cache(filter_form, pagination):
     key = ",".join((filter_form.caching_key(),
@@ -573,6 +578,8 @@ def item(report_id, want_object=False):
 
     forward['error_name'] = report.error_name
     forward['oops'] = report.oops
+
+    forward['version'] = get_package_version(report_id)
 
     if want_object:
         try:
