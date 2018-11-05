@@ -1290,15 +1290,31 @@ def get_crashed_unknown_package_nevr_for_report(db, report_id):
 
 def get_crashed_package_version_for_report(db, report_id):
     """
-    Return version for unknown packages that CRASHED in a given
+    Return version for packages that CRASHED in a given
     report.
     """
-    return (db.session.query(st.ReportUnknownPackage.version)
-            .filter(st.ReportUnknownPackage.report_id == report_id)
-            .filter(st.ReportUnknownPackage.type == "CRASHED")
-            .order_by(desc('version'))
-            .first())
+    component_id = (db.session.query(st.Report.component_id)
+                    .filter(st.Report.id == report_id))
+    max_epoch = (db.session.query(st.Build.epoch)
+                 .join(st.BuildComponent, st.BuildComponent.build_id == st.Build.id)
+                 .filter(st.BuildComponent.component_id == component_id)
+                 .order_by(desc('epoch'))
+                 .first())
+    max_version = (db.session.query(st.Build.version)
+                   .join(st.BuildComponent, st.BuildComponent.build_id == st.Build.id)
+                   .filter(st.BuildComponent.component_id == component_id)
+                   .filter(st.Build.epoch == max_epoch)
+                   .order_by(desc('version'))
+                   .first())
+    max_release = (db.session.query(st.Build.release)
+                   .join(st.BuildComponent, st.BuildComponent.build_id == st.Build.id)
+                   .filter(st.BuildComponent.component_id == component_id)
+                   .filter(st.Build.epoch == max_epoch)
+                   .filter(st.Build.version == max_version)
+                   .order_by(desc('release'))
+                   .first())
 
+    return (str(max_epoch[0])+":"+max_version[0]+"-"+max_release[0])
 
 def get_problem_opsysrelease(db, problem_id, opsysrelease_id):
     return (db.session.query(st.ProblemOpSysRelease)

@@ -190,11 +190,6 @@ def get_reports(filter_form, pagination):
 
     return r
 
-
-def get_package_version(report_id):
-    latest_version = get_crashed_package_version_for_report(db,report_id)
-    return latest_version[0]
-
 def reports_list_table_rows_cache(filter_form, pagination):
     key = ",".join((filter_form.caching_key(),
                     str(pagination.limit),
@@ -579,7 +574,7 @@ def item(report_id, want_object=False):
     forward['error_name'] = report.error_name
     forward['oops'] = report.oops
 
-    forward['version'] = get_package_version(report_id)
+    forward['version'] = get_crashed_package_version_for_report(db, report_id)
 
     if want_object:
         try:
